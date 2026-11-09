@@ -115,7 +115,22 @@ export const technicalSkills = {
   ],
 };
 
-export const leadershipList = [];
+export const leadershipList = [
+  {
+    title: "PESCE Technical Symposium & Coding Forum",
+    role: "Technical Coordinator",
+    badge: "Campus Leadership",
+    description:
+      "Organized technical workshops and coding competitions on Java and web technologies for over 150+ students.",
+  },
+  {
+    title: "Full Stack Peer Mentorship Community",
+    role: "Lead Peer Mentor",
+    badge: "Mentorship",
+    description:
+      "Conducted hands-on sessions guiding junior peers in object-oriented programming, Spring Boot REST APIs, and frontend development.",
+  },
+];
 
 export const internshipsList = [
   {
