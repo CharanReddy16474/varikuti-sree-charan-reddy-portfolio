@@ -1,7 +1,7 @@
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import About from './components/About'
-import Skills from './components/Skills'
+import TechnicalSkills from './components/TechnicalSkills'
 import Process from './components/Process'
 import Projects from './components/Projects'
 import Experience from './components/Experience'
@@ -15,7 +15,7 @@ function App() {
       <main className="flex-grow">
         <Hero />
         <About />
-        <Skills />
+        <TechnicalSkills />
         <Process />
         <Projects />
         <Experience />
