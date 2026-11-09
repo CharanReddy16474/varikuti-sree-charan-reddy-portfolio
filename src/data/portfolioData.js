@@ -213,8 +213,8 @@ export const certificates = {
 
 export const education = {
   degree: "Bachelor of Engineering in Computer Science",
-  institution: "PES College of Engineering",
-  cgpa: "2022 - 2026",
+  institution: "PES College of Engineering, Mandya",
+  cgpa: "9.1 CGPA",
   graduation: "2026",
   twelfth: "",
   tenth: "",
@@ -236,3 +236,4 @@ export const emailjsConfig = {
   templateId: import.meta.env.VITE_EMAILJS_TEMPLATE_ID || "YOUR_EMAILJS_TEMPLATE_ID",
   publicKey: import.meta.env.VITE_EMAILJS_PUBLIC_KEY || "YOUR_EMAILJS_PUBLIC_KEY",
 };
+
