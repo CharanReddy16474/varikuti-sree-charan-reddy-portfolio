@@ -1,102 +1,86 @@
-import { aboutContent, education, personalInfo } from '../data/portfolioData'
-import profileImg from '../assets/about/profile.png'
+import { motion } from 'framer-motion'
+import stackImage from '../assets/about/profile.png'
+import { aboutContent, personalInfo } from '../data/portfolioData'
 
 export default function About() {
   return (
     <section
       id="about"
-      className="bg-white text-neutral-900 py-24 px-6 md:px-12 relative overflow-hidden"
+      className="bg-[#ff2a2a] pt-20 pb-40 px-6 md:px-12 relative overflow-hidden"
     >
-      <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-          {/* Left Column: Illustrated Portrait */}
-          <div className="lg:col-span-5 flex justify-center">
-            <div className="relative w-full max-w-sm sm:max-w-md">
-              {/* Decorative Background Accent */}
-              <div className="absolute -top-4 -left-4 w-full h-full rounded-3xl bg-[#ff2a2a]/10 -rotate-2" />
-              <div className="absolute -bottom-4 -right-4 w-full h-full rounded-3xl bg-neutral-100 rotate-2" />
+      {/* Decorative 4-point-star SVG (Top-Right) */}
+      <svg
+        className="absolute top-10 right-10 w-10 h-10 text-black fill-black opacity-30 animate-pulse pointer-events-none"
+        viewBox="0 0 24 24"
+      >
+        <path d="M12 0l2.5 8.5L23 12l-8.5 2.5L12 23l-2.5-8.5L1 12l8.5-2.5z" />
+      </svg>
 
-              {/* Portrait Container */}
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-neutral-900">
-                <img
-                  src={profileImg}
-                  alt={personalInfo.name}
-                  className="w-full h-auto object-cover hover:scale-105 transition-transform duration-500"
-                />
-              </div>
+      {/* Decorative 4-point-star SVG (Bottom-Left) */}
+      <svg
+        className="absolute bottom-28 left-8 w-12 h-12 text-black fill-black opacity-30 animate-pulse pointer-events-none"
+        style={{ animationDelay: '1s' }}
+        viewBox="0 0 24 24"
+      >
+        <path d="M12 0l2.5 8.5L23 12l-8.5 2.5L12 23l-2.5-8.5L1 12l8.5-2.5z" />
+      </svg>
 
-              {/* Floating Stat Badge */}
-              <div className="absolute -bottom-6 left-6 right-6 bg-neutral-950 text-white px-5 py-3.5 rounded-2xl shadow-xl flex items-center justify-between border border-neutral-800">
-                <div>
-                  <p className="text-xs text-neutral-400 font-medium">Academics</p>
-                  <p className="text-sm font-bold text-white">{education.cgpa}</p>
-                </div>
-                <div className="h-8 w-px bg-neutral-800" />
-                <div className="text-right">
-                  <p className="text-xs text-neutral-400 font-medium">Degree</p>
-                  <p className="text-sm font-bold text-[#ff2a2a]">B.E. CSE (2026)</p>
-                </div>
-              </div>
+      <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-16 items-start relative z-10">
+        {/* Left: ID badge on a lanyard */}
+        <div className="md:w-[350px] shrink-0 w-full flex justify-center">
+          <motion.div
+            initial={{ y: -300, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true, amount: 0.15 }}
+            transition={{
+              type: 'spring',
+              stiffness: 110,
+              damping: 9,
+              mass: 1.1,
+            }}
+            className="relative flex flex-col items-center pt-8"
+          >
+            {/* Black lanyard string */}
+            <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-3 h-40 bg-black z-0 pointer-events-none" />
+
+            {/* Grey clip rectangle */}
+            <div className="relative z-10 w-8 h-4 bg-gray-400 rounded-sm mb-[-2px] shadow-sm" />
+
+            {/* Dark Card */}
+            <div className="relative z-20 bg-gray-900 max-w-[280px] w-full rounded-2xl p-3 shadow-2xl -rotate-3 hover:rotate-0 transition-transform duration-500">
+              {/* Slot cutout */}
+              <div className="w-12 h-1.5 bg-black/60 rounded-full mx-auto mb-3" />
+
+              {/* Photo inside */}
+              <img
+                src={stackImage}
+                alt={personalInfo.name}
+                className="w-full aspect-[3/4] rounded-xl object-cover object-top"
+              />
             </div>
-          </div>
+          </motion.div>
+        </div>
 
-          {/* Right Column: Bio & Highlights */}
-          <div className="lg:col-span-7 space-y-6 pt-6 lg:pt-0">
-            {/* Section Tag */}
-            <div className="inline-block px-3.5 py-1 rounded-full bg-[#ff2a2a]/10 text-[#ff2a2a] text-xs font-bold uppercase tracking-wider">
-              About Me
-            </div>
-
-            {/* Heading */}
-            <h2 className="text-3xl sm:text-5xl font-black text-black tracking-tight">
-              {aboutContent.heading}
-            </h2>
-
-            {/* Bio with TAP Academy highlight */}
-            <div
-              className="text-neutral-700 text-base sm:text-lg leading-relaxed space-y-4"
-              dangerouslySetInnerHTML={{ __html: aboutContent.bio }}
-            />
-
-            {/* Tech Stack Chips */}
-            <div className="pt-4 space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">
-                Core Technologies
-              </h3>
-              <div className="flex flex-wrap gap-2.5">
-                {aboutContent.techStack.map((tech) => (
-                  <span
-                    key={tech}
-                    className="px-4 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-900 font-semibold text-sm transition-colors border border-neutral-200/80"
-                  >
-                    {tech}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Quick Education / Location Details */}
-            <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-neutral-200">
-              <div>
-                <p className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">
-                  Institution
-                </p>
-                <p className="text-sm sm:text-base font-bold text-black mt-1">
-                  {education.institution}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">
-                  Location
-                </p>
-                <p className="text-sm sm:text-base font-bold text-black mt-1">
-                  {personalInfo.location}
-                </p>
-              </div>
-            </div>
-          </div>
+        {/* Right: Heading & Bio */}
+        <div data-aos="fade-left" className="flex-1 space-y-6">
+          <h2 className="text-4xl md:text-5xl font-black text-black tracking-tight">
+            {aboutContent.heading}
+          </h2>
+          <p
+            className="text-lg font-bold leading-relaxed text-red-50"
+            dangerouslySetInnerHTML={{ __html: aboutContent.bio }}
+          />
         </div>
       </div>
+
+      {/* White torn-paper SVG divider */}
+      <svg
+        className="absolute bottom-0 left-0 w-full h-12 md:h-20 fill-white z-10"
+        viewBox="0 0 1200 120"
+        preserveAspectRatio="none"
+      >
+        <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C59.71,118.08,130.83,119.62,189.5,99.8,242.79,81.82,282.88,63.6,321.39,56.44Z" />
+      </svg>
     </section>
   )
 }
