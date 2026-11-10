@@ -41,7 +41,10 @@ export const heroContent = {
     text: "Contact Me",
     href: "mailto:vscreddy16@gmail.com?subject=Hiring Inquiry – Portfolio&body=Hello,%0D%0A%0D%0AI came across your portfolio and would like to discuss an opportunity with you.%0D%0A%0D%0ABest Regards,",
   },
-  ctaResume: { text: "Download Resume", href: "/Resume.pdf" },
+  ctaResume: {
+    text: "Request Resume",
+    href: "mailto:vscreddy16@gmail.com?subject=Resume%20Request%20%E2%80%93%20Varikuti%20Sree%20Charan%20Reddy&body=Hello%20Charan,%0D%0A%0D%0AI%20came%20across%20your%20portfolio%20and%20would%20like%20to%20request%20a%20copy%20of%20your%20latest%20resume.%0D%0A%0D%0AThank%20you,%0D%0A",
+  },
 };
 
 export const aboutContent = {
