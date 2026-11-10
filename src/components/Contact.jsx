@@ -1,312 +1,306 @@
-import { useState, useRef } from 'react'
-import emailjs from '@emailjs/browser'
-import { personalInfo, socialLinks, emailjsConfig } from '../data/portfolioData'
+import { useRef, useState } from 'react'
+import { motion, useScroll, useTransform } from 'framer-motion'
+import { emailjsConfig, personalInfo, socialLinks } from '../data/portfolioData'
 
+// ── Arrow icon (slides right on hover) ───────────────────────────────────────
+function ArrowIcon() {
+  return (
+    <svg
+      className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 8h10M9 4l4 4-4 4" />
+    </svg>
+  )
+}
+
+// ── Spinner icon ──────────────────────────────────────────────────────────────
+function SpinnerIcon() {
+  return (
+    <svg
+      className="w-4 h-4 animate-spin"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <circle className="opacity-25" cx="12" cy="12" r="10" strokeWidth="4" />
+      <path
+        className="opacity-75"
+        d="M4 12a8 8 0 018-8"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 export default function Contact() {
+  const ref     = useRef(null)
   const formRef = useRef(null)
-  const [status, setStatus] = useState('idle') // 'idle' | 'sending' | 'success' | 'error'
-  const [errorMessage, setErrorMessage] = useState('')
 
-  const handleSubmit = async (e) => {
+  // 'idle' | 'sending' | 'success' | 'error'
+  const [status, setStatus] = useState('idle')
+  const [agreed, setAgreed] = useState(false)
+
+  // Parallax — giant background word floats as the section scrolls
+  const { scrollYProgress } = useScroll({
+    target:  ref,
+    offset:  ['start end', 'end start'],
+  })
+  const y = useTransform(scrollYProgress, [0, 1], ['-20%', '30%'])
+
+  // ── Form submit ─────────────────────────────────────────────────────────────
+  async function handleSubmit(e) {
     e.preventDefault()
-    setStatus('sending')
-    setErrorMessage('')
+    if (status === 'sending') return
 
-    // Fallback if EmailJS variables are not set in .env.local
-    if (
-      !emailjsConfig.serviceId ||
-      emailjsConfig.serviceId === 'YOUR_EMAILJS_SERVICE_ID'
-    ) {
-      // Direct mailto fallback
-      const formData = new FormData(formRef.current)
-      const name = formData.get('user_name') || ''
-      const email = formData.get('user_email') || ''
-      const subject = formData.get('subject') || 'Portfolio Inquiry'
-      const message = formData.get('message') || ''
+    // Read values by id
+    const firstName = formRef.current.querySelector('#firstName')?.value.trim() ?? ''
+    const lastName  = formRef.current.querySelector('#lastName')?.value.trim()  ?? ''
+    const email     = formRef.current.querySelector('#email')?.value.trim()     ?? ''
+    const message   = formRef.current.querySelector('#message')?.value.trim()   ?? ''
 
-      const mailtoUrl = `mailto:${personalInfo.emails.primary}?subject=${encodeURIComponent(
-        subject,
-      )}&body=${encodeURIComponent(
-        `From: ${name} (${email})\n\nMessage:\n${message}`,
-      )}`
-
-      window.location.href = mailtoUrl
-      setStatus('success')
-      if (formRef.current) formRef.current.reset()
+    // Basic validation
+    if (!firstName || !email || !message) {
+      setStatus('error')
+      setTimeout(() => setStatus('idle'), 3000)
       return
     }
 
-    try {
-      await emailjs.sendForm(
-        emailjsConfig.serviceId,
-        emailjsConfig.templateId,
-        formRef.current,
-        {
-          publicKey: emailjsConfig.publicKey,
-        },
+    setStatus('sending')
+
+    const { serviceId, templateId, publicKey } = emailjsConfig
+    const PLACEHOLDERS = [
+      'YOUR_EMAILJS_SERVICE_ID',
+      'YOUR_EMAILJS_TEMPLATE_ID',
+      'YOUR_EMAILJS_PUBLIC_KEY',
+    ]
+    const isConfigured =
+      serviceId && templateId && publicKey &&
+      !PLACEHOLDERS.includes(serviceId) &&
+      !PLACEHOLDERS.includes(templateId) &&
+      !PLACEHOLDERS.includes(publicKey)
+
+    if (!isConfigured) {
+      // Fallback: open mailto
+      const subject = `Portfolio Contact from ${firstName} ${lastName}`
+      const body    = encodeURIComponent(
+        `From: ${firstName} ${lastName}\nEmail: ${email}\n\n${message}`
+      )
+      window.open(
+        `mailto:${personalInfo.emails.primary}?subject=${subject}&body=${body}`,
+        '_blank'
       )
       setStatus('success')
-      if (formRef.current) formRef.current.reset()
+      formRef.current.reset()
+      setTimeout(() => setStatus('idle'), 3000)
+      return
+    }
+
+    // EmailJS send
+    try {
+      const emailjs = await import('@emailjs/browser')
+      await emailjs.sendForm(serviceId, templateId, formRef.current, publicKey)
+      setStatus('success')
+      formRef.current.reset()
     } catch (err) {
       console.error('EmailJS error:', err)
       setStatus('error')
-      setErrorMessage(
-        'Unable to send message via the form. Please reach out directly via email.',
-      )
     }
+    setTimeout(() => setStatus('idle'), 4000)
   }
+
+  // ── Submit button label / style ─────────────────────────────────────────────
+  const btnConfig = {
+    idle: {
+      label:   'Send Message',
+      icon:    <ArrowIcon />,
+      classes: 'border-black text-black hover:bg-black hover:text-white group',
+    },
+    sending: {
+      label:   'Sending...',
+      icon:    <SpinnerIcon />,
+      classes: 'border-gray-400 text-gray-400 cursor-not-allowed',
+    },
+    success: {
+      label:   'Sent Successfully ✓',
+      icon:    null,
+      classes: 'border-green-600 bg-green-600 text-white',
+    },
+    error: {
+      label:   'Failed — Try Again',
+      icon:    null,
+      classes: 'border-red-900 bg-red-900 text-white',
+    },
+  }
+  const btn = btnConfig[status]
+
+  // ── Common input class (underline-only) ─────────────────────────────────────
+  const inputCls =
+    'w-full bg-transparent border-b border-white/40 pb-3 text-white text-lg ' +
+    'placeholder-white/60 outline-none focus:border-white transition-colors duration-200'
 
   return (
     <section
+      ref={ref}
       id="contact"
-      className="bg-[#0a0a0a] text-white py-24 px-6 md:px-12 relative overflow-hidden border-t border-neutral-900"
+      className="bg-[#0a0a0a] w-full min-h-screen relative overflow-hidden flex items-end pt-32 border-t border-gray-900"
     >
-      {/* Background glow */}
-      <div className="absolute top-1/2 right-1/4 w-96 h-96 bg-[#ff2a2a]/10 rounded-full blur-3xl pointer-events-none" />
+      {/* ── Parallax giant word ── */}
+      <motion.div
+        style={{ y }}
+        className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 select-none overflow-hidden"
+        aria-hidden="true"
+      >
+        <div
+          className="text-[25vw] leading-[0.75] font-black uppercase tracking-tighter text-white/[0.03] scale-y-[1.6] origin-top whitespace-nowrap"
+          style={{ fontFamily: "'Impact','Arial Black',sans-serif" }}
+        >
+          Contact
+        </div>
+      </motion.div>
 
-      <div className="max-w-7xl mx-auto space-y-16 relative">
-        {/* Header */}
-        <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-block px-3.5 py-1 rounded-full bg-[#ff2a2a]/10 text-[#ff2a2a] text-xs font-bold uppercase tracking-wider">
-            Get In Touch
-          </div>
-          <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
-            Let&apos;s Build Something Great
-          </h2>
-          <p className="text-neutral-400 text-base sm:text-lg">
-            I am actively looking for software engineering roles and full-stack opportunities. Drop a message or reach out directly!
+      {/* ── Red card ── */}
+      <div
+        data-aos="fade-up"
+        className="relative z-10 w-full md:w-[85%] lg:w-[75%] ml-auto bg-[#ff2a2a] p-8 md:p-16"
+      >
+        {/* Header row */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-12">
+          <p className="text-sm uppercase tracking-[0.2em] text-white/80 font-semibold">
+            Reach Me
           </p>
+          {socialLinks.instagram ? (
+            <a
+              href={socialLinks.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/40 text-white text-sm font-semibold hover:bg-white hover:text-[#ff2a2a] transition-colors duration-300"
+            >
+              {/* Instagram icon */}
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 1.366.062 2.633.334 3.608 1.308.974.975 1.246 2.242 1.308 3.608.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.062 1.366-.334 2.633-1.308 3.608-.975.974-2.242 1.246-3.608 1.308-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.366-.062-2.633-.334-3.608-1.308-.974-.975-1.246-2.242-1.308-3.608C2.175 15.584 2.163 15.204 2.163 12s.012-3.584.07-4.85c.062-1.366.334-2.633 1.308-3.608.975-.974 2.242-1.246 3.608-1.308C8.416 2.175 8.796 2.163 12 2.163zm0-2.163C8.741 0 8.332.014 7.052.072 5.197.157 3.355.673 2.014 2.014.673 3.355.157 5.197.072 7.052.014 8.332 0 8.741 0 12c0 3.259.014 3.668.072 4.948.085 1.855.601 3.697 1.942 5.038 1.341 1.341 3.183 1.857 5.038 1.942C8.332 23.986 8.741 24 12 24s3.668-.014 4.948-.072c1.855-.085 3.697-.601 5.038-1.942 1.341-1.341 1.857-3.183 1.942-5.038.058-1.28.072-1.689.072-4.948s-.014-3.668-.072-4.948c-.085-1.855-.601-3.697-1.942-5.038C20.645.673 18.803.157 16.948.072 15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+              </svg>
+              DM on Instagram
+            </a>
+          ) : null}
         </div>
 
-        {/* Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-          {/* Left Column: Direct Info Cards */}
-          <div className="lg:col-span-5 space-y-6">
-            <h3 className="text-2xl font-bold text-white tracking-tight">
-              Contact Details
-            </h3>
-
-            {/* Email Card */}
-            <a
-              href={`mailto:${personalInfo.emails.primary}`}
-              className="block bg-neutral-900/60 border border-neutral-800 hover:border-[#ff2a2a]/50 rounded-2xl p-6 transition-all duration-300 group"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[#ff2a2a] group-hover:scale-110 transition-transform">
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.8}
-                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
-                    Email
-                  </p>
-                  <p className="text-sm sm:text-base font-bold text-white group-hover:text-[#ff2a2a] transition-colors mt-0.5">
-                    {personalInfo.emails.primary}
-                  </p>
-                </div>
-              </div>
-            </a>
-
-            {/* Phone Card */}
-            <a
-              href={`tel:${personalInfo.phone.replace(/\s+/g, '')}`}
-              className="block bg-neutral-900/60 border border-neutral-800 hover:border-[#ff2a2a]/50 rounded-2xl p-6 transition-all duration-300 group"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[#ff2a2a] group-hover:scale-110 transition-transform">
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.8}
-                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
-                    Phone
-                  </p>
-                  <p className="text-sm sm:text-base font-bold text-white group-hover:text-[#ff2a2a] transition-colors mt-0.5">
-                    {personalInfo.phone}
-                  </p>
-                </div>
-              </div>
-            </a>
-
-            {/* Location Card */}
-            <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl p-6 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[#ff2a2a]">
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.8}
-                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.8}
-                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-              </div>
+        {/* ── Form ── */}
+        <form
+          ref={formRef}
+          onSubmit={handleSubmit}
+          noValidate
+          className="flex flex-col gap-12"
+        >
+          {/* Two-column row: inputs left, textarea right */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            {/* Left — text inputs */}
+            <div className="flex flex-col gap-10">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
-                  Location
-                </p>
-                <p className="text-sm sm:text-base font-bold text-white mt-0.5">
-                  {personalInfo.location}
-                </p>
-              </div>
-            </div>
-
-            {/* Social Links Row */}
-            <div className="pt-2 flex items-center gap-4">
-              <a
-                href={socialLinks.github}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-5 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-sm font-semibold text-neutral-300 hover:text-white hover:border-neutral-600 transition"
-              >
-                GitHub Profile ↗
-              </a>
-              <a
-                href={socialLinks.linkedin}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-5 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-sm font-semibold text-neutral-300 hover:text-[#ff2a2a] hover:border-neutral-600 transition"
-              >
-                LinkedIn Profile ↗
-              </a>
-            </div>
-          </div>
-
-          {/* Right Column: Contact Form */}
-          <div className="lg:col-span-7 bg-neutral-900/60 border border-neutral-800 rounded-3xl p-8 sm:p-10">
-            <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {/* Name */}
-                <div className="space-y-2">
-                  <label
-                    htmlFor="user_name"
-                    className="block text-xs font-bold uppercase tracking-wider text-neutral-300"
-                  >
-                    Your Name
-                  </label>
-                  <input
-                    id="user_name"
-                    name="user_name"
-                    type="text"
-                    required
-                    placeholder="John Doe"
-                    className="w-full px-4 py-3.5 rounded-xl bg-black/60 border border-neutral-700/80 text-white placeholder-neutral-500 focus:outline-none focus:border-[#ff2a2a] transition-colors"
-                  />
-                </div>
-
-                {/* Email */}
-                <div className="space-y-2">
-                  <label
-                    htmlFor="user_email"
-                    className="block text-xs font-bold uppercase tracking-wider text-neutral-300"
-                  >
-                    Your Email
-                  </label>
-                  <input
-                    id="user_email"
-                    name="user_email"
-                    type="email"
-                    required
-                    placeholder="john@example.com"
-                    className="w-full px-4 py-3.5 rounded-xl bg-black/60 border border-neutral-700/80 text-white placeholder-neutral-500 focus:outline-none focus:border-[#ff2a2a] transition-colors"
-                  />
-                </div>
-              </div>
-
-              {/* Subject */}
-              <div className="space-y-2">
-                <label
-                  htmlFor="subject"
-                  className="block text-xs font-bold uppercase tracking-wider text-neutral-300"
-                >
-                  Subject
+                <label htmlFor="firstName" className="block text-white/60 text-xs uppercase tracking-widest mb-2">
+                  First Name <span className="text-white">*</span>
                 </label>
                 <input
-                  id="subject"
-                  name="subject"
+                  id="firstName"
+                  name="first_name"
                   type="text"
                   required
-                  placeholder="Full Stack Opportunity"
-                  className="w-full px-4 py-3.5 rounded-xl bg-black/60 border border-neutral-700/80 text-white placeholder-neutral-500 focus:outline-none focus:border-[#ff2a2a] transition-colors"
+                  placeholder="Sree Charan"
+                  className={inputCls}
                 />
               </div>
 
-              {/* Message */}
-              <div className="space-y-2">
-                <label
-                  htmlFor="message"
-                  className="block text-xs font-bold uppercase tracking-wider text-neutral-300"
-                >
-                  Message
+              <div>
+                <label htmlFor="lastName" className="block text-white/60 text-xs uppercase tracking-widest mb-2">
+                  Last Name
                 </label>
-                <textarea
-                  id="message"
-                  name="message"
-                  rows={5}
-                  required
-                  placeholder="Hello Charan, I came across your portfolio..."
-                  className="w-full px-4 py-3.5 rounded-xl bg-black/60 border border-neutral-700/80 text-white placeholder-neutral-500 focus:outline-none focus:border-[#ff2a2a] transition-colors resize-none"
+                <input
+                  id="lastName"
+                  name="last_name"
+                  type="text"
+                  placeholder="Reddy"
+                  className={inputCls}
                 />
               </div>
 
-              {/* Feedback States */}
-              {status === 'success' && (
-                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-medium">
-                  ✓ Message sent successfully! I will get back to you shortly.
-                </div>
-              )}
+              <div>
+                <label htmlFor="email" className="block text-white/60 text-xs uppercase tracking-widest mb-2">
+                  Email Address <span className="text-white">*</span>
+                </label>
+                <input
+                  id="email"
+                  name="user_email"
+                  type="email"
+                  required
+                  placeholder="you@example.com"
+                  className={inputCls}
+                />
+              </div>
+            </div>
 
-              {status === 'error' && (
-                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-medium">
-                  {errorMessage}
-                </div>
-              )}
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={status === 'sending'}
-                className="w-full sm:w-auto px-8 py-4 rounded-full bg-[#ff2a2a] hover:bg-[#e02424] active:scale-95 text-white font-bold text-sm tracking-wide shadow-lg shadow-[#ff2a2a]/30 transition-all duration-200 cursor-pointer disabled:opacity-50"
-              >
-                {status === 'sending' ? 'Sending Message...' : 'Send Message'}
-              </button>
-            </form>
+            {/* Right — message */}
+            <div className="flex flex-col">
+              <label htmlFor="message" className="block text-white/60 text-xs uppercase tracking-widest mb-2">
+                Message <span className="text-white">*</span>
+              </label>
+              <textarea
+                id="message"
+                name="message"
+                required
+                placeholder="Tell me about your project, opportunity, or just say hello…"
+                rows={8}
+                className={`${inputCls} resize-none min-h-[120px] flex-1`}
+              />
+            </div>
           </div>
-        </div>
+
+          {/* Bottom row */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-8 border-t border-white/20 pt-8">
+            {/* Left — checkbox + note */}
+            <div className="flex flex-col gap-4 max-w-sm">
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={e => setAgreed(e.target.checked)}
+                  className="mt-1 w-4 h-4 accent-black rounded flex-shrink-0"
+                />
+                <span className="text-white/70 text-sm leading-snug">
+                  I allow my submitted data to be used to contact me back.
+                </span>
+              </label>
+
+              <p className="text-white/50 text-xs leading-relaxed">
+                Your message will be sent directly to my inbox. I typically respond within 24–48 hours.
+              </p>
+
+              <a
+                href={`mailto:${personalInfo.emails.primary}`}
+                className="text-white text-sm font-semibold underline underline-offset-4 hover:text-black transition-colors duration-200 w-fit"
+              >
+                Or email me directly →
+              </a>
+            </div>
+
+            {/* Right — submit button */}
+            <button
+              type="submit"
+              disabled={status === 'sending'}
+              className={`inline-flex items-center gap-2 px-8 py-4 rounded-full border-2 text-sm font-black uppercase tracking-widest transition-all duration-300 ${btn.classes}`}
+            >
+              {btn.icon}
+              {btn.label}
+            </button>
+          </div>
+        </form>
       </div>
     </section>
   )
 }
-
