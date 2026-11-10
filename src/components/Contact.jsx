@@ -47,6 +47,7 @@ export default function Contact() {
   // 'idle' | 'sending' | 'success' | 'error'
   const [status, setStatus] = useState('idle')
   const [agreed, setAgreed] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
 
   // Parallax — giant background word floats as the section scrolls
   const { scrollYProgress } = useScroll({
@@ -60,6 +61,11 @@ export default function Contact() {
     e.preventDefault()
     if (status === 'sending') return
 
+    // Trigger native browser tooltip if any required field is missing
+    if (formRef.current && !formRef.current.reportValidity()) {
+      return
+    }
+
     // Read values by id
     const firstName = formRef.current.querySelector('#firstName')?.value.trim() ?? ''
     const lastName  = formRef.current.querySelector('#lastName')?.value.trim()  ?? ''
@@ -68,12 +74,32 @@ export default function Contact() {
 
     // Basic validation
     if (!firstName || !email || !message) {
+      setErrorMsg(!message ? 'Please write a message before sending.' : 'Please fill in all required fields.')
       setStatus('error')
-      setTimeout(() => setStatus('idle'), 3000)
+      setTimeout(() => {
+        setStatus('idle')
+        setErrorMsg('')
+      }, 3000)
       return
     }
 
     setStatus('sending')
+    setErrorMsg('')
+
+    // Populate extra template field variations so any template variable works
+    const fullName = `${firstName} ${lastName}`.trim()
+    if (formRef.current.querySelector('#hidden_name')) {
+      formRef.current.querySelector('#hidden_name').value = fullName
+    }
+    if (formRef.current.querySelector('#hidden_from_name')) {
+      formRef.current.querySelector('#hidden_from_name').value = fullName
+    }
+    if (formRef.current.querySelector('#hidden_reply_to')) {
+      formRef.current.querySelector('#hidden_reply_to').value = email
+    }
+    if (formRef.current.querySelector('#hidden_email')) {
+      formRef.current.querySelector('#hidden_email').value = email
+    }
 
     const { serviceId, templateId, publicKey } = emailjsConfig
     const PLACEHOLDERS = [
@@ -111,9 +137,13 @@ export default function Contact() {
       formRef.current.reset()
     } catch (err) {
       console.error('EmailJS error:', err)
+      setErrorMsg('Failed to send — check your connection or email directly.')
       setStatus('error')
     }
-    setTimeout(() => setStatus('idle'), 4000)
+    setTimeout(() => {
+      setStatus('idle')
+      setErrorMsg('')
+    }, 4000)
   }
 
   // ── Submit button label / style ─────────────────────────────────────────────
@@ -196,9 +226,14 @@ export default function Contact() {
         <form
           ref={formRef}
           onSubmit={handleSubmit}
-          noValidate
           className="flex flex-col gap-12"
         >
+          {/* Hidden inputs to support any EmailJS template variable names */}
+          <input type="hidden" id="hidden_name" name="name" />
+          <input type="hidden" id="hidden_from_name" name="from_name" />
+          <input type="hidden" id="hidden_reply_to" name="reply_to" />
+          <input type="hidden" id="hidden_email" name="email" />
+
           {/* Two-column row: inputs left, textarea right */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             {/* Left — text inputs */}
@@ -290,14 +325,21 @@ export default function Contact() {
             </div>
 
             {/* Right — submit button */}
-            <button
-              type="submit"
-              disabled={status === 'sending'}
-              className={`inline-flex items-center gap-2 px-8 py-4 rounded-full border-2 text-sm font-black uppercase tracking-widest transition-all duration-300 ${btn.classes}`}
-            >
-              {btn.icon}
-              {btn.label}
-            </button>
+            <div className="flex flex-col items-end gap-2">
+              <button
+                type="submit"
+                disabled={status === 'sending'}
+                className={`inline-flex items-center gap-2 px-8 py-4 rounded-full border-2 text-sm font-black uppercase tracking-widest transition-all duration-300 ${btn.classes}`}
+              >
+                {btn.icon}
+                {btn.label}
+              </button>
+              {errorMsg && (
+                <p className="text-white text-xs font-semibold bg-black/40 px-3 py-1.5 rounded-md">
+                  {errorMsg}
+                </p>
+              )}
+            </div>
           </div>
         </form>
       </div>
