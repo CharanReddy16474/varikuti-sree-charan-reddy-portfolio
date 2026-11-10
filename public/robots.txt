@@ -1,5 +1,5 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://YOUR-SITE-URL/sitemap.xml
+Sitemap: https://myportfolio-blush-pi-72.vercel.app/sitemap.xml
 

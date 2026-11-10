@@ -2,7 +2,7 @@
 
 A high-performance single-page developer portfolio showcasing full-stack web engineering, Java backend systems, and responsive user experiences.
 
-**Live Site:** https://YOUR-SITE-URL/
+**Live Site:** https://myportfolio-blush-pi-72.vercel.app/
 
 ---
 
