@@ -72,7 +72,7 @@ export default function About() {
                   <div className="w-full flex-grow rounded-xl overflow-hidden bg-black">
                     <img
                       src={stackImage}
-                      alt={personalInfo.name}
+                      alt="Varikuti Sree Charan Reddy — Java Full Stack Developer, TAP Academy student"
                       className="w-full h-full object-cover object-top"
                     />
                   </div>
